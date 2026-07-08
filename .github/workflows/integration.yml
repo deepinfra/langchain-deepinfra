@@ -19,6 +19,7 @@ jobs:
         with:
           python-version: "3.11"
           enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
       - run: uv sync
       - name: integration tests
         env:

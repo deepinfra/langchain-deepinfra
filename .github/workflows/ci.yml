@@ -21,6 +21,7 @@ jobs:
         with:
           python-version: "3.11"
           enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
       - run: uv sync
       - name: ruff check
         run: uv run ruff check .
@@ -41,6 +42,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
       - run: uv sync
       - name: unit tests
         run: uv run pytest tests/unit_tests/
