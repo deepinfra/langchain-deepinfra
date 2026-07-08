@@ -1,0 +1,26 @@
+name: Integration Tests
+
+# Live tests against the DeepInfra API. Requires a `DEEPINFRA_API_TOKEN`
+# repository secret. Run on demand or nightly (not on every PR).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - run: uv sync
+      - name: integration tests
+        env:
+          DEEPINFRA_API_TOKEN: ${{ secrets.DEEPINFRA_API_TOKEN }}
+        run: uv run pytest tests/integration_tests/
