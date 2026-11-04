@@ -3,7 +3,8 @@
 [![PyPI version](https://img.shields.io/pypi/v/langchain-deepinfra.svg)](https://pypi.org/project/langchain-deepinfra/)
 
 The official [LangChain](https://github.com/langchain-ai/langchain) integration for
-[DeepInfra](https://deepinfra.com) — chat models, embeddings, and reranking.
+[DeepInfra](https://deepinfra.com) — chat models, embeddings, reranking, and a
+[Deep Agents](https://github.com/langchain-ai/deepagents) sandbox backend.
 
 ## Installation
 
@@ -49,6 +50,47 @@ reranked = reranker.compress_documents(documents, "my query")
 # each returned Document carries metadata["relevance_score"]
 ```
 
+## Sandbox (Deep Agents)
+
+`DeepInfraSandbox` is a [Deep Agents](https://github.com/langchain-ai/deepagents)
+sandbox backend, so an agent's shell commands and file edits run inside a
+[DeepInfra Sandbox](https://deepinfra.com/blog/sandboxes) (an isolated microVM)
+instead of on your machine.
+
+```bash
+pip install -U "langchain-deepinfra[sandbox]"   # Python 3.11+
+export DEEPINFRA_API_KEY="your-api-token"       # read by the deepinfra SDK
+```
+
+```python
+from deepagents import create_deep_agent
+from deepinfra import Sandbox
+
+from langchain_deepinfra import ChatDeepInfra, DeepInfraSandbox
+
+sandbox = Sandbox.create(plan="medium", timeout="30m")
+try:
+    agent = create_deep_agent(
+        model=ChatDeepInfra(model="meta-llama/Llama-3.3-70B-Instruct"),
+        backend=DeepInfraSandbox(sandbox=sandbox),
+    )
+    agent.invoke(
+        {"messages": [{"role": "user", "content": "Write and run fizzbuzz.py"}]}
+    )
+finally:
+    sandbox.terminate()
+```
+
+The backend wraps a sandbox you own, so you decide its plan and lifetime and can
+reuse one sandbox across runs (`Sandbox.from_id(...)`). Commands run with
+`bash -c`; `execute(..., timeout=...)` is forwarded to the sandbox, and a command
+the sandbox kills comes back with exit code 124. DeepInfra's file API only
+accepts paths under `/workspace` (the directory that survives stop/start), so
+uploads and downloads for other absolute paths are staged under
+`/workspace/.deepagents-transfer` and moved with one command per batch. Missing
+files, directories, unreadable files and relative paths are reported per file
+as `file_not_found`, `is_directory`, `permission_denied` and `invalid_path`.
+
 ## Configuration
 
 | Argument             | Env var              | Default                                  |
@@ -70,6 +112,10 @@ subclasses of `langchain-openai`:
   OpenAI-compatible: it calls `POST /v1/inference/{model}` with parallel `queries` /
   `documents` arrays (the query is repeated once per document) and reads one relevance
   `score` per document from the response.
+- **`DeepInfraSandbox`** subclasses Deep Agents' `BaseSandbox`, which builds `ls`, `read`,
+  `write`, `edit`, `grep` and `glob` on top of three primitives. It implements those with
+  the `deepinfra` SDK: `execute` via `Sandbox.exec`/`aexec`, and `upload_files` /
+  `download_files` via the `/workspace` fs API plus one staging command per batch.
 
 ## Development
 

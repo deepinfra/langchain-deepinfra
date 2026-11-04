@@ -5,7 +5,13 @@ from langchain_deepinfra import (
     __version__,
 )
 
-EXPECTED = ["ChatDeepInfra", "DeepInfraEmbeddings", "DeepInfraRerank", "__version__"]
+EXPECTED = [
+    "ChatDeepInfra",
+    "DeepInfraEmbeddings",
+    "DeepInfraRerank",
+    "DeepInfraSandbox",
+    "__version__",
+]
 
 
 def test_all_exports() -> None:
